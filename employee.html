@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EMPLOREE Employee Portal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { colors: { slate: { 850: '#1e293b', 900: '#0f172a' } } } }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans antialiased h-screen flex flex-col overflow-hidden">
+
+    <div id="employeeLoginScreen" class="fixed inset-0 z-[999] bg-slate-900 flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1587560416999-6e3e1174667d?q=80&w=1920&auto=format&fit=crop')] bg-cover bg-center">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+        <div class="relative bg-white/10 backdrop-filter backdrop-blur-lg border border-white/20 p-8 rounded-2xl shadow-2xl w-full max-w-md animate-slide-in">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-white mb-1">Employee Portal</h1>
+                <p class="text-teal-200 text-sm">Login with your Employee ID</p>
+                <a href="index.html" class="text-xs text-blue-300 hover:text-blue-200 block mt-2"><i class="fa-solid fa-arrow-left"></i> Back to Manager Login</a>
+            </div>
+            <form onsubmit="employeeLogin(event)" class="space-y-5">
+                <input type="number" id="empIdLogin" class="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 outline-none focus:ring-2 focus:ring-teal-500" placeholder="Employee ID (e.g., 101)" required>
+                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 rounded-lg shadow-lg transition-all transform hover:scale-[1.02]">Login</button>
+            </form>
+            <p id="empLoginError" class="text-red-400 text-center text-sm mt-4 hidden"><i class="fa-solid fa-circle-exclamation"></i> Invalid Employee ID</p>
+        </div>
+    </div>
+
+    <div id="employeeAppContainer" class="hidden h-full flex-col p-4 lg:p-6 overflow-y-auto custom-scroll">
+        <div id="toast-container" class="fixed top-5 right-5 z-[100] flex flex-col gap-3"></div>
+        
+        <header class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm mb-6 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-4">
+                 <div class="w-12 h-12 rounded-full bg-teal-600 dark:bg-teal-500 flex items-center justify-center font-bold text-white text-xl" id="empAvatar">--</div>
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white" id="welcomeName">Welcome, Employee!</h1>
+                    <p class="text-sm text-slate-500" id="empRole">Your Role</p>
+                </div>
+            </div>
+            <button onclick="employeeLogout()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-right-from-bracket text-lg"></i> Logout</button>
+        </header>
+
+        <main class="container mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow">
+            <div class="lg:col-span-1 space-y-6">
+                
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg border border-teal-200 dark:border-teal-700">
+                    <h2 class="text-lg font-bold text-teal-600 mb-4 flex items-center"><i class="fa-solid fa-clock-rotate-left mr-2"></i>Daily Punch</h2>
+                    <p class="text-xs text-slate-500 mb-4" id="currentDateDisplay"></p>
+                    <div id="punchStatus" class="flex justify-between items-center mb-4">
+                        <div class="text-sm">
+                            <p class="font-bold text-slate-800 dark:text-white">In: <span id="punchInTime" class="text-emerald-500">--:--</span></p>
+                            <p class="font-bold text-slate-800 dark:text-white">Out: <span id="punchOutTime" class="text-red-500">--:--</span></p>
+                        </div>
+                        <span id="punchStateIndicator" class="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600">Off Duty</span>
+                    </div>
+
+                    <div id="punchControls" class="grid grid-cols-2 gap-3">
+                        <button id="punchInBtn" onclick="punchIn()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-bold disabled:bg-emerald-300 disabled:cursor-not-allowed">Punch In</button>
+                        <button id="punchOutBtn" onclick="punchOut()" class="bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-bold disabled:bg-red-300 disabled:cursor-not-allowed" disabled>Punch Out</button>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm h-fit space-y-4">
+                    <div class="flex justify-between items-center">
+                         <h2 class="text-lg font-bold text-slate-800 dark:text-white"><i class="fa-solid fa-user-circle mr-2"></i>My Profile</h2>
+                         <button onclick="openEditProfileModal()" class="text-xs text-blue-500 hover:text-blue-400"><i class="fa-solid fa-pen-to-square"></i> Edit Info</button>
+                    </div>
+                    
+                    <div class="text-sm space-y-2">
+                        <p><strong>Status:</strong> <span id="empStatus" class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">Active</span></p>
+                        <p><strong>Email:</strong> <span id="empEmail">N/A</span></p>
+                        <p><strong>Phone:</strong> <span id="empPhone">N/A</span></p>
+                        <p><strong>Address:</strong> <span id="empAddress">N/A</span></p>
+                        <p><strong>Emergency Contact:</strong> <span id="empEmergency">N/A</span></p>
+                        <p><strong>Salary (Annual):</strong> <span id="empSalary">N/A</span></p>
+                        <p><strong>Joined:</strong> <span id="empJoined">N/A</span></p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm h-fit">
+                    <h2 class="text-lg font-bold text-amber-600 mb-4 flex items-center"><i class="fa-solid fa-bullhorn mr-2"></i>Announcements</h2>
+                    <div id="announcementBoard" class="space-y-3 text-sm max-h-48 overflow-y-auto">
+                        </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-xl shadow-sm flex justify-between items-center border-l-4 border-emerald-500">
+                    <div>
+                        <h3 class="text-sm font-bold text-emerald-600 uppercase">Last Salary Paid</h3>
+                        <p class="text-2xl font-bold text-slate-800 dark:text-white" id="lastPaidAmount">--</p>
+                        <p class="text-xs text-slate-500">For: <span id="lastPaidMonth">...</span></p>
+                    </div>
+                    <div class="text-right">
+                        <i class="fa-solid fa-file-invoice-dollar text-3xl text-emerald-400"></i>
+                        <p class="text-xs mt-2 text-slate-500">Next Pay Day: <span id="nextPayDayDisplay">...</span></p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm h-fit">
+                    <h2 class="text-lg font-bold text-red-600 mb-4"><i class="fa-solid fa-calendar-minus mr-2"></i>Request Leave</h2>
+                    <form onsubmit="submitEmployeeLeave(event)" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div><label class="text-xs font-bold text-slate-500 mb-1 block">Start Date</label><input type="date" id="leaveStart" required class="input-field"></div>
+                            <div><label class="text-xs font-bold text-slate-500 mb-1 block">End Date</label><input type="date" id="leaveEnd" required class="input-field"></div>
+                        </div>
+                        <div><label class="text-xs font-bold text-slate-500 mb-1 block">Leave Type</label><select id="leaveType" class="input-field"><option value="Sick Leave">Sick Leave</option><option value="Casual Leave">Casual Leave</option><option value="Annual Leave">Annual Vacation</option><option value="Emergency">Emergency</option></select></div>
+                        <div><label class="text-xs font-bold text-slate-500 mb-1 block">Reason</label><textarea id="leaveReason" rows="2" required class="input-field"></textarea></div>
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-bold shadow-md">Submit Leave Request</button>
+                    </form>
+
+                    <h3 class="text-md font-bold text-slate-600 dark:text-slate-300 mt-6 mb-3 border-t border-slate-100 dark:border-slate-700 pt-4">My Leave History</h3>
+                    <div id="employeeLeaveHistory" class="space-y-2 max-h-48 overflow-y-auto custom-scroll">
+                        <p class="text-center text-slate-400 py-4 text-sm">Loading...</p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm h-fit">
+                    <h2 class="text-lg font-bold text-blue-600 mb-4"><i class="fa-solid fa-list-check mr-2"></i>My Attendance History (Last 30 Days)</h2>
+                    <div id="personalAttendanceHistory" class="overflow-x-auto custom-scroll">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 dark:bg-slate-700"><tr><th class="p-3 text-left">Date</th><th class="p-3">Punch In</th><th class="p-3">Punch Out</th><th class="p-3">Status</th></tr></thead>
+                            <tbody id="attendanceHistoryTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="editProfileModal" class="modal-overlay hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-6 border border-slate-100 dark:border-slate-700">
+            <h2 class="text-lg font-bold text-slate-800 dark:text-white mb-4"><i class="fa-solid fa-pen-to-square mr-2"></i>Update Personal Information</h2>
+            <form onsubmit="saveProfileUpdates(event)" class="space-y-4">
+                <input type="text" id="editPhone" placeholder="Phone Number" required class="input-field">
+                <input type="text" id="editEmergency" placeholder="Emergency Contact Name" required class="input-field">
+                <textarea id="editAddress" rows="2" placeholder="Full Address" required class="input-field"></textarea>
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeEditProfileModal()" class="px-4 py-2 text-slate-500 rounded-lg hover:bg-slate-100">Cancel</button>
+                    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-lg shadow-md">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        const KEYS = { DATA: 'omni_v5_data', LEAVES: 'omni_v5_leaves', ATTENDANCE: 'omni_v5_attendance', SETTINGS: 'omni_v5_settings' };
+        let employees = [];
+        let leaves = [];
+        let attendance = {};
+        let settings = {};
+        let currentEmployee = null;
+        let currentEmployeeId = null;
+        const todayKey = new Date().toISOString().split('T')[0];
+
+        // --- CORE INITIALIZATION & LOGIN ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const storedId = sessionStorage.getItem('currentEmployeeId');
+            if (storedId) {
+                currentEmployeeId = Number(storedId);
+                // Ensure role persists across reloads for simple client-side gating
+                if (!sessionStorage.getItem('role')) sessionStorage.setItem('role', 'employee');
+                loadAllData();
+                showEmployeeApp();
+            }
+        });
+
+        function loadAllData() {
+            const d = localStorage.getItem(KEYS.DATA);
+            employees = d ? JSON.parse(d) : [];
+
+            const l = localStorage.getItem(KEYS.LEAVES);
+            leaves = l ? JSON.parse(l) : [];
+
+            const a = localStorage.getItem(KEYS.ATTENDANCE);
+            attendance = a ? JSON.parse(a) : {};
+
+            const s = localStorage.getItem(KEYS.SETTINGS);
+            settings = s ? JSON.parse(s) : { payDay: 25 }; 
+        }
+
+        function saveData() {
+            localStorage.setItem(KEYS.DATA, JSON.stringify(employees));
+            localStorage.setItem(KEYS.LEAVES, JSON.stringify(leaves));
+            localStorage.setItem(KEYS.ATTENDANCE, JSON.stringify(attendance));
+            // Settings are usually managed by the manager portal, but loaded here.
+        }
+
+        function employeeLogin(e) {
+            e.preventDefault();
+            const id = Number(document.getElementById('empIdLogin').value);
+            loadAllData();
+            const employee = employees.find(emp => emp.id === id);
+
+            if (employee) {
+                currentEmployeeId = id;
+                sessionStorage.setItem('currentEmployeeId', id);
+                // mark this session as an employee to help role-based UI in manager pages
+                sessionStorage.setItem('role', 'employee');
+                showEmployeeApp(employee);
+            } else {
+                document.getElementById('empLoginError').classList.remove('hidden');
+            }
+        }
+
+        function showEmployeeApp(emp) {
+            document.getElementById('employeeLoginScreen').classList.add('hidden');
+            document.getElementById('employeeAppContainer').classList.remove('hidden');
+            
+            currentEmployee = emp || employees.find(e => e.id === currentEmployeeId);
+            if (currentEmployee) {
+                renderProfileInfo();
+                renderLeaveHistory();
+                renderSalaryInfo();
+                renderAnnouncements();
+                updateAttendanceUI();
+                renderPersonalAttendanceHistory();
+            }
+        }
+        
+        function employeeLogout() { sessionStorage.removeItem('currentEmployeeId'); location.reload(); }
+
+
+        // --- FEATURE 1: PUNCH IN/OUT LOGIC ---
+        function updateAttendanceUI() {
+            document.getElementById('currentDateDisplay').innerText = new Date().toDateString();
+            const todayRecord = attendance[todayKey] && attendance[todayKey][currentEmployeeId];
+            const inTime = todayRecord ? todayRecord.in : null;
+            const outTime = todayRecord ? todayRecord.out : null;
+
+            document.getElementById('punchInTime').innerText = inTime || '--:--';
+            document.getElementById('punchOutTime').innerText = outTime || '--:--';
+
+            const inBtn = document.getElementById('punchInBtn');
+            const outBtn = document.getElementById('punchOutBtn');
+            const indicator = document.getElementById('punchStateIndicator');
+
+            if (inTime && outTime) {
+                inBtn.disabled = true; outBtn.disabled = true;
+                indicator.innerText = 'Completed';
+                indicator.className = 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700';
+            } else if (inTime) {
+                inBtn.disabled = true; outBtn.disabled = false;
+                indicator.innerText = 'On Duty';
+                indicator.className = 'px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700';
+            } else {
+                inBtn.disabled = false; outBtn.disabled = true;
+                indicator.innerText = 'Off Duty';
+                indicator.className = 'px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600';
+            }
+        }
+
+        function punchIn() {
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            if (!attendance[todayKey]) attendance[todayKey] = {};
+            
+            attendance[todayKey][currentEmployeeId] = { in: time, out: null, status: 'P' };
+            
+            // Update employee status to Active if it was Absent/Leave
+            if (currentEmployee.status !== 'Active') {
+                currentEmployee.status = 'Active';
+                saveData(); // Save both attendance and employee status
+                renderProfileInfo(); // Update status display
+            } else {
+                saveData();
+            }
+            updateAttendanceUI();
+            showToast(`Punched In at ${time}`);
+        }
+
+        function punchOut() {
+            const todayRecord = attendance[todayKey] && attendance[todayKey][currentEmployeeId];
+            if (!todayRecord || todayRecord.out) return; 
+
+            const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            attendance[todayKey][currentEmployeeId].out = time;
+            
+            // Check if full day worked (optional complex logic omitted)
+            
+            saveData();
+            updateAttendanceUI();
+            showToast(`Punched Out at ${time}`);
+        }
+        
+        // --- FEATURE 2: PERSONAL ATTENDANCE HISTORY ---
+        function renderPersonalAttendanceHistory() {
+            const tableBody = document.getElementById('attendanceHistoryTable');
+            tableBody.innerHTML = '';
+            
+            const daysToDisplay = 30;
+            for (let i = 0; i < daysToDisplay; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const dateKey = date.toISOString().split('T')[0];
+
+                const record = attendance[dateKey] && attendance[dateKey][currentEmployeeId];
+                let status = 'Unmarked';
+                let inTime = '--:--';
+                let outTime = '--:--';
+                let statusColor = 'text-gray-500';
+
+                if (record) {
+                    inTime = record.in || '--:--';
+                    outTime = record.out || '--:--';
+                    
+                    if (record.status === 'P' || (record.in && record.out)) {
+                        status = 'Present';
+                        statusColor = 'text-emerald-600';
+                    } else if (record.status === 'A') {
+                        status = 'Absent';
+                        statusColor = 'text-red-600';
+                    } else if (record.status === 'L') {
+                        status = 'On Leave';
+                        statusColor = 'text-amber-600';
+                    } else if (record.in && !record.out) {
+                        status = 'On Duty';
+                        statusColor = 'text-blue-600';
+                    }
+                }
+                
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-100 dark:border-slate-700/50";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold">${date.toLocaleDateString()}</td>
+                    <td class="p-3">${inTime}</td>
+                    <td class="p-3">${outTime}</td>
+                    <td class="p-3 font-bold ${statusColor}">${status}</td>
+                `;
+                tableBody.appendChild(tr);
+            }
+        }
+        
+        // --- FEATURE 3: SALARY INFO ---
+        function renderSalaryInfo() {
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth(); // 0-11
+            
+            // Find last paid month key
+            let lastPaidKey = null;
+            // Loop backward from current month
+            for(let i = 0; i < 12; i++) {
+                const m = (currentMonth - i + 12) % 12; // Adjusted month index
+                const y = currentYear - (m > currentMonth ? 1 : 0);
+                const key = `pay_${y}_${m}`;
+                if (localStorage.getItem(key)) {
+                    lastPaidKey = key;
+                    break;
+                }
+            }
+            
+            const salaryPerMonth = currentEmployee.salary / 12;
+
+            if (lastPaidKey) {
+                const parts = lastPaidKey.split('_');
+                const paidMonthDate = new Date(parts[1], parts[2], 1);
+                document.getElementById('lastPaidAmount').innerText = formatCurrency(salaryPerMonth);
+                document.getElementById('lastPaidMonth').innerText = paidMonthDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+            } else {
+                document.getElementById('lastPaidAmount').innerText = formatCurrency(salaryPerMonth);
+                document.getElementById('lastPaidMonth').innerText = "Not yet tracked";
+            }
+            
+            document.getElementById('nextPayDayDisplay').innerText = settings.payDay || '25';
+        }
+
+        // --- FEATURE 4: PROFILE EDITING ---
+        function openEditProfileModal() {
+            document.getElementById('editPhone').value = currentEmployee.phone;
+            document.getElementById('editEmergency').value = currentEmployee.emergencyContact;
+            document.getElementById('editAddress').value = currentEmployee.address;
+            document.getElementById('editProfileModal').classList.remove('hidden');
+        }
+
+        function closeEditProfileModal() {
+            document.getElementById('editProfileModal').classList.add('hidden');
+        }
+
+        function saveProfileUpdates(e) {
+            e.preventDefault();
+            
+            const newPhone = document.getElementById('editPhone').value;
+            const newEmergency = document.getElementById('editEmergency').value;
+            const newAddress = document.getElementById('editAddress').value;
+
+            // Find employee index and update
+            const empIndex = employees.findIndex(emp => emp.id === currentEmployeeId);
+            if (empIndex > -1) {
+                employees[empIndex].phone = newPhone;
+                employees[empIndex].emergencyContact = newEmergency;
+                employees[empIndex].address = newAddress;
+                currentEmployee = employees[empIndex]; // Update local reference
+                
+                saveData();
+                renderProfileInfo(); // Refresh display
+                closeEditProfileModal();
+                showToast('Profile updated successfully!');
+            }
+        }
+
+        // --- FEATURE 5: ANNOUNCEMENTS ---
+        function renderAnnouncements() {
+            const board = document.getElementById('announcementBoard');
+            board.innerHTML = '';
+            
+            const mockAnnouncements = [
+                { date: 'Nov 20', title: 'Diwali Holiday Notice', content: 'The office will be closed on Nov 25th for the festival of Diwali.' },
+                { date: 'Nov 15', title: 'New HR Policy', content: 'New Leave Policy document is now available on the shared drive.' },
+                { date: 'Nov 10', title: 'Team Meeting Reminder', content: 'All department heads meeting on Nov 22nd at 10 AM in Conference Room A.' }
+            ];
+
+            mockAnnouncements.forEach(ann => {
+                const div = document.createElement('div');
+                div.className = 'border-b border-slate-100 dark:border-slate-700 pb-2';
+                div.innerHTML = `
+                    <p class="font-bold text-slate-800 dark:text-white">${ann.title}</p>
+                    <p class="text-xs text-slate-500 mb-1">${ann.content}</p>
+                    <span class="text-[10px] text-amber-500 font-bold">${ann.date}</span>
+                `;
+                board.appendChild(div);
+            });
+        }
+
+
+        // --- UTILS & LEAVE LOGIC (Modified from previous) ---
+        function renderProfileInfo() {
+            // Updated to use currentEmployee reference
+            const employee = currentEmployee;
+            document.getElementById('welcomeName').innerText = `Welcome, ${employee.firstName}!`;
+            document.getElementById('empRole').innerText = employee.position + ' / ' + employee.department;
+
+            let avatarInitials = employee.firstName[0] + employee.lastName[0];
+            document.getElementById('empAvatar').innerText = avatarInitials;
+
+            const statusElement = document.getElementById('empStatus');
+            statusElement.innerText = employee.status.toUpperCase();
+            statusElement.className = `px-2 py-0.5 rounded-full text-xs font-bold ${employee.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : employee.status === 'Leave' ? 'bg-amber-100 text-amber-700' : employee.status === 'Absent' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`;
+
+            document.getElementById('empEmail').innerText = employee.email;
+            document.getElementById('empPhone').innerText = employee.phone;
+            document.getElementById('empAddress').innerText = employee.address;
+            document.getElementById('empEmergency').innerText = employee.emergencyContact;
+            document.getElementById('empSalary').innerText = formatCurrency(employee.salary);
+            document.getElementById('empJoined').innerText = employee.joined;
+        }
+        
+        function renderLeaveHistory() {
+            const container = document.getElementById('employeeLeaveHistory');
+            container.innerHTML = '';
+            
+            const myLeaves = leaves.filter(l => l.empId == currentEmployeeId).sort((a, b) => new Date(b.start) - new Date(a.start));
+
+            if (myLeaves.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-400 py-4 text-sm">No leave history found.</p>`;
+                return;
+            }
+
+            myLeaves.forEach(l => {
+                const div = document.createElement('div');
+                div.className = `p-3 rounded-lg border text-xs flex justify-between items-center ${l.status === 'Pending' ? 'bg-yellow-50 border-yellow-100 dark:bg-slate-700' : l.status === 'Approved' ? 'bg-emerald-50 border-emerald-100 dark:bg-slate-700' : 'bg-red-50 border-red-100 dark:bg-slate-700'}`;
+                
+                let statusColor = l.status === 'Pending' ? 'text-amber-600' : l.status === 'Approved' ? 'text-emerald-600' : 'text-red-600';
+
+                div.innerHTML = `
+                    <div>
+                        <p class="font-bold text-slate-800 dark:text-white">${l.type}</p>
+                        <p class="text-slate-500 dark:text-slate-400">${l.start} to ${l.end}</p>
+                    </div>
+                    <span class="font-bold ${statusColor}">${l.status.toUpperCase()}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function submitEmployeeLeave(e) {
+            e.preventDefault();
+            const req = {
+                empId: currentEmployeeId,
+                start: document.getElementById('leaveStart').value,
+                end: document.getElementById('leaveEnd').value,
+                type: document.getElementById('leaveType').value,
+                reason: document.getElementById('leaveReason').value,
+                status: 'Pending'
+            };
+            
+            if (new Date(req.start) > new Date(req.end)) { showToast('Error: Start date cannot be after end date.', 'error'); return; }
+
+            loadAllData();
+            leaves.unshift(req);
+            saveData();
+            
+            e.target.reset();
+            renderLeaveHistory();
+            showToast('Leave request submitted successfully! Awaiting manager approval.');
+        }
+
+        function formatCurrency(n) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n); }
+        function showToast(m, type = 'success') { 
+            const d = document.createElement('div'); 
+            d.className = `bg-white border-l-4 px-6 py-4 shadow-xl rounded animate-slide-in ${type === 'success' ? 'border-teal-500 text-teal-700' : 'border-red-500 text-red-700'}`; 
+            d.innerText = m; 
+            document.getElementById('toast-container').appendChild(d); 
+            setTimeout(()=>d.remove(),4000); 
+        }
+    </script>
+
+    <footer class="fixed bottom-0 left-0 right-0 bg-slate-900 dark:bg-slate-950 text-slate-400 text-center py-1 text-[10px] border-t border-slate-700 z-10">
+        <p>&copy; 2025 EMPLOREE. All rights reserved by <strong>Mayur Sonawane</strong> | MS ENTERPRICES</p>
+    </footer>
+</body>
+</html>
